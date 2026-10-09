@@ -2473,7 +2473,8 @@ document.addEventListener('DOMContentLoaded', () => escolaIdentidade.aplicar());
         { pront: '28126', nome: 'Rita de Cassia Albuquerque', cargo: 'Gestão', funcao: 'Direção', pass: 'pmspgestores2026' },
         { pront: '37213', nome: 'Christina Kobayashi', cargo: 'Gestão', funcao: 'Direção', pass: 'pmspgestores2026' },
         { pront: '40127', nome: 'Paula Raquel Soares Melo Sousa', cargo: 'Gestão', funcao: 'Coordenação', pass: 'pmspgestores2026' },
-        { pront: '41405', nome: 'Pedro Henrique Ribeiro Tromell', cargo: 'Secretaria', funcao: 'Funcionário', pass: 'secretaria2026' }
+        { pront: '41405', nome: 'Pedro Henrique Ribeiro Tromell', cargo: 'Secretaria', funcao: 'Funcionário', pass: 'secretaria2026' },
+        { pront: '46640', nome: 'Luciana', cargo: 'NTEi', nivel: 'estagiario', funcao: 'Estagiária', pass: 'ntei2026' }
     ].forEach(u => {
         db.ref('usuarios/' + u.pront).once('value').then(sn => {
             if (!sn.exists()) db.ref('usuarios/' + u.pront).set(Object.assign({ status: 'ativo' }, u));
@@ -5511,7 +5512,22 @@ input::placeholder, textarea::placeholder { color: #94a3b8 !important; opacity: 
             const sEl = document.getElementById(pre + '-s');
             const p = pEl?.value;
             const s = sEl?.value;
-            if (!s) { alert('Informe a senha.'); return; }
+            if (!s) {
+                // Primeiro acesso: com o prontuário digitado e senha em branco, mostra a senha padrão na tela
+                // (somente se a conta existe, está ativa, é deste perfil e ainda usa a senha padrão).
+                if (p) {
+                    try {
+                        const sn = await db.ref('usuarios/' + p).once('value');
+                        const u = sn.exists() ? sn.val() : null;
+                        if (u && u.status === 'ativo' && u.cargo === cargo && this.padroes.includes(String(u.pass))) {
+                            if (sEl) sEl.value = String(u.pass);
+                            alert('🔑 PRIMEIRO ACESSO\n\nOlá, ' + (u.nome || 'usuário') + '!\nSua senha padrão é:\n\n' + u.pass + '\n\nEla já foi preenchida. Clique em ACESSAR novamente e, em seguida, crie sua senha pessoal.');
+                            return;
+                        }
+                    } catch (e) {}
+                }
+                alert('Informe a senha.'); return;
+            }
 
             // Regra do SEFE: login só existe/funciona nos dias marcados (07 e 08/07).
             if (cargo === 'SEFE' && !this.hojeERestrito()) {
